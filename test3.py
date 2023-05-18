@@ -41,10 +41,8 @@ book_ids = [item['book_id'] for item in favorits]
 # is_read_values = [item['is_read'] for item in favorits]
 ratings = [item['rating'] for item in favorits]
 mongo_book_id =[item['_id'] for item in favorits]
-mongo_book_titel= []
 # print(mongo_book_id)
 columns=['user_id','book_id', 'is_read', 'rating']
-my_books = pd.DataFrame({'user_id':userid,'book_id': book_ids, 'rating': ratings})
 # print(my_books)
 client.close()
 
@@ -52,34 +50,28 @@ client.close()
 client_books = pymongo.MongoClient(url)
 db_books = client_books['book']
 collection_book = db_books['books']
-books = collection_book.find()
-books_df = pd.DataFrame(books)
-# Convert ObjectIDs to strings
-data = []
-for doc in books_df:
-        data.append({
-            '_id': str(doc['_id']),
-            'book_id': doc['book_id'],
-            'title': doc['title'],
-            'ratings': doc['ratings'],
-            'url': doc['url'],
-            'cover_image': doc['cover_image'],
-            'description': doc['description']
-        })
-        print(df.head(3))
-# books_df = pd.DataFrame(data)
-# for item,data in books_df:
-#     book = collection.find_one({'_id': data})
-#     if book['_id'] == mongo_book_id[item]:
-#         # Retrieve data from the collection
-#         mongo_book_titel.append(book['title'])
+mongo_book_title = []
+print(mongo_book_id)
+for data in mongo_book_id:
+    books = collection_book.find_one({'_id': ObjectId(data)})
+    mongo_book_title.append(books['title'])
+my_books = pd.DataFrame({'user_id':userid,'book_id': book_ids, 'rating': ratings,'title':mongo_book_title})
+print(my_books)
+client.close()
 
+# #interaction collection
+# client_books = pymongo.MongoClient(url)
+# db_books = client_books['book']
+# collection_book = db_books['books']
+
+interaction = pd.read_csv("1-2m-user-interaction.csv", index_col =0)
 @app.route('/')
 def home():
     return 'Server works'
 
 @app.route('/recommendations', methods=['GET'])
 def recommendations():
+
     return
 if __name__ == "__main__":
     app.run()
