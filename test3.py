@@ -1,3 +1,4 @@
+import caching as caching
 import pandas as pd
 import pymongo
 from bson.objectid import ObjectId
@@ -13,11 +14,11 @@ import matplotlib.pyplot as plt
 from bson.objectid import ObjectId
 from nltk.corpus import stopwords
 nltk.download("stopwords")
-
-
-
+from flask_caching import Cache
 from PIL import Image
-from flask import Flask, request
+from flask import Flask, request, jsonify
+from sklearn.metrics.pairwise import cosine_similarity
+from scipy.sparse import coo_matrix
 
 app = Flask(__name__)
 
@@ -45,8 +46,6 @@ mongo_book_id =[item['_id'] for item in favorits]
 columns=['user_id','book_id', 'is_read', 'rating']
 # print(my_books)
 client.close()
-
-#book collection
 client_books = pymongo.MongoClient(url)
 db_books = client_books['book']
 collection_book = db_books['books']
@@ -56,7 +55,6 @@ for data in mongo_book_id:
     books = collection_book.find_one({'_id': ObjectId(data)})
     mongo_book_title.append(books['title'])
 my_books = pd.DataFrame({'user_id':userid,'book_id': book_ids, 'rating': ratings,'title':mongo_book_title})
-print(my_books)
 client.close()
 
 # #interaction collection
@@ -64,13 +62,16 @@ client.close()
 # db_books = client_books['book']
 # collection_book = db_books['books']
 
-interaction = pd.read_csv("1-2m-user-interaction.csv", index_col =0)
+interaction = pd.read_csv("C:\\Users\\mergo\\Desktop\\usersact.csv")
+books = pd.read_csv("C:\\Users\\mergo\\Desktop\\books.csv")
+
 @app.route('/')
 def home():
     return 'Server works'
 
 @app.route('/recommendations', methods=['GET'])
 def recommendations():
+    my_index = 0
 
     return
 if __name__ == "__main__":
