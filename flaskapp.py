@@ -12,7 +12,9 @@ import random
 
 app = Flask(__name__)
 
-
+books_titles = pd.read_csv("C:/Users/mergo/Desktop/book_conc.csv")
+interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
+interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
 @app.route('/')
 def home():
     return 'Server works'
@@ -94,7 +96,7 @@ def recommendations(userid):
     ratings_mat = ratings_mat_coo.tocsr()
     interactions[interactions["user_id"] == str(userid)]
     my_index = 0
-    from sklearn
+    from sklearn.metrics.pairwise import cosine_similarity
 
     similarity = cosine_similarity(ratings_mat[my_index,:], ratings_mat).flatten()
     import numpy as np
@@ -102,59 +104,35 @@ def recommendations(userid):
     indices = np.argpartition(similarity, len(similarity)-1)[-len(similarity):]
     similar_users = interactions[interactions["user_index"].isin(indices)].copy()
     similar_users = similar_users[similar_users["user_id"]!=str(userid)]
-    books_titles = pd.read_csv("C:/Users/mergo/Desktop/books.csv")
+    # books_titles = pd.read_csv("C:/Users/mergo/Desktop/books.csv")
     # Assuming 'df' is your DataFrame
     columns_to_drop = ["Unnamed: 0","book_id"]
-    books_titles = books_titles.drop(columns_to_drop, axis=1)
+    books_titles1 = books_titles.drop(columns_to_drop, axis=1)
     # Assuming 'df' is your DataFrame
-    books_titles.rename(columns={'_id': 'book_id'}, inplace=True)
+    books_titles1.rename(columns={'_id': 'book_id'}, inplace=True)
     book_recs = similar_users.groupby("book_id").rating.agg(['count', 'mean'])
-    book_recs = book_recs.merge(books_titles, how="inner", on="book_id")
+    book_recs = book_recs.merge(books_titles1, how="inner", on="book_id")
     book_recs["adjusted_count"] = book_recs["count"] * (book_recs["count"] / book_recs["ratings"])
     book_recs["score"] = book_recs["mean"] * book_recs["adjusted_count"]
     book_recs = book_recs[book_recs["mean"] >=4]
-    
-    return book_recs.to_json()
+    book_recs_list = []
+    for _, row in book_recs.iterrows():
+        book_rec_dict = {
+            "book_id": row["book_id"],
+            "title": row["title"],
+            "count": row["count"],
+            "mean": row["mean"],
+            "adjusted_count": row["adjusted_count"],
+            "score": row["score"],
+            "cover_image": row["cover_image"]
+        }
+        book_recs_list.append(book_rec_dict)
 
+    return jsonify(results=book_recs_list)
 
-@app.route('/itembased/<userid>/<book_title>', methods=['POST'])
-def itembased(userid, book_title):
-    books_titles = pd.read_csv("C:/Users/mergo/Desktop/book_conc.csv")
-    interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
-    interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
-
+@app.route('/itembased/<book_title>', methods=['POST'])
+def itembased(book_title):
     users_books_df = interactions.pivot_table(index='user_id', columns='title', values='rating')
-
-    # Specify the database URL and credentials
-    url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
-
-    # Create a client object
-    client = pymongo.MongoClient(url)
-
-    # Select the database and collection
-    db = client['book']
-    collection = db['users']
-    # Retrieve data from the collection
-    # request.form.post('userid')
-    user_id = ObjectId(userid)
-    user = collection.find_one({'_id': user_id})
-    # Convert the list of dictionaries to a Pandas DataFrame
-    df_user = pd.DataFrame(user)
-    books_list_mongo = df_user['favorits']
-
-    books_list = pd.DataFrame(columns=['user_id', 'book_id', 'rating', 'title', 'ratings_count'])
-
-    # Select the database and collection
-    db = client['book']
-    collection = db['books']
-    for item in books_list_mongo:
-        book_title = collection.find_one({'_id': ObjectId(item['_id'])})
-    if book_title['ratings_count'] != None:
-        new_data = {'user_id': userid, 'book_id': item['_id'], 'rating': item['rating'], 'title': book_title['title'],
-                    'ratings_count': book_title['ratings_count']}
-        books_list.loc[len(books_list)] = new_data
-
-    books_given_5_points = books_list[books_list['rating'] == 5]
     item_based_5_books = users_books_df.corrwith(users_books_df[book_title])
     item_based_5_books = item_based_5_books.to_frame()
     item_based_5_books = item_based_5_books[:20]
