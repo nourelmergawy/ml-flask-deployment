@@ -15,6 +15,7 @@ app = Flask(__name__)
 books_titles = pd.read_csv("C:/Users/mergo/Desktop/book_conc.csv")
 interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
 interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
+# users_books_df = pd.read_csv("C:/Users/mergo/Desktop/users_books_df.csv")
 @app.route('/')
 def home():
     return 'Server works'
