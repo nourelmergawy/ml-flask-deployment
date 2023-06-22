@@ -172,7 +172,7 @@ def itembased(userid, book_title):
             "country_code": row["country_code"],
             "publisher": row["publisher"]
         }
-    book_recs_list.append(book_rec_dict)
+        book_recs_list.append(book_rec_dict)
     return jsonify(results=book_recs_list)
 
 
