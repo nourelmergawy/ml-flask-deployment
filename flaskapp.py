@@ -20,9 +20,7 @@ def home():
 @app.route('/test', methods=['POST'])
 def test(): 
     userid = request.form.get('userid')
-    return '''
-                  <h1>The language value is: {}</h1>
-                  <h1>The framework value is: {}</h1>'''.format(userid)
+    return
 @app.route('/recommendations/<userid>', methods=['POST'])
 def recommendations(userid):
     # Specify the database URL and credentials
@@ -96,7 +94,7 @@ def recommendations(userid):
     ratings_mat = ratings_mat_coo.tocsr()
     interactions[interactions["user_id"] == str(userid)]
     my_index = 0
-    from sklearn.metrics.pairwise import cosine_similarity
+    from sklearn
 
     similarity = cosine_similarity(ratings_mat[my_index,:], ratings_mat).flatten()
     import numpy as np
@@ -117,6 +115,66 @@ def recommendations(userid):
     book_recs = book_recs[book_recs["mean"] >=4]
     
     return book_recs.to_json()
+
+
+@app.route('/itembased/<userid>/<book_title>', methods=['POST'])
+def itembased(userid, book_title):
+    books_titles = pd.read_csv("C:/Users/mergo/Desktop/book_conc.csv")
+    interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
+    interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
+
+    users_books_df = interactions.pivot_table(index='user_id', columns='title', values='rating')
+
+    # Specify the database URL and credentials
+    url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
+
+    # Create a client object
+    client = pymongo.MongoClient(url)
+
+    # Select the database and collection
+    db = client['book']
+    collection = db['users']
+    # Retrieve data from the collection
+    # request.form.post('userid')
+    user_id = ObjectId(userid)
+    user = collection.find_one({'_id': user_id})
+    # Convert the list of dictionaries to a Pandas DataFrame
+    df_user = pd.DataFrame(user)
+    books_list_mongo = df_user['favorits']
+
+    books_list = pd.DataFrame(columns=['user_id', 'book_id', 'rating', 'title', 'ratings_count'])
+
+    # Select the database and collection
+    db = client['book']
+    collection = db['books']
+    for item in books_list_mongo:
+        book_title = collection.find_one({'_id': ObjectId(item['_id'])})
+    if book_title['ratings_count'] != None:
+        new_data = {'user_id': userid, 'book_id': item['_id'], 'rating': item['rating'], 'title': book_title['title'],
+                    'ratings_count': book_title['ratings_count']}
+        books_list.loc[len(books_list)] = new_data
+
+    books_given_5_points = books_list[books_list['rating'] == 5]
+    item_based_5_books = users_books_df.corrwith(users_books_df[book_title])
+    item_based_5_books = item_based_5_books.to_frame()
+    item_based_5_books = item_based_5_books[:20]
+    final_list = books_titles.merge(item_based_5_books, how="inner", on="title")
+    book_recs_list = []
+    for index, row in final_list.iterrows():
+        book_rec_dict = {
+            "book_id": row["_id"],
+            "title": row["title"],
+            "ratings": row["ratings"],
+            "url": row["url"],
+            "description": row["description"],
+            "publication_year": row["publication_year"],
+            "cover_image": row["cover_image"],
+            "country_code": row["country_code"],
+            "publisher": row["publisher"]
+        }
+    book_recs_list.append(book_rec_dict)
+    return jsonify(results=book_recs_list)
+
 
 if __name__ == '__main__':
     app.run()
