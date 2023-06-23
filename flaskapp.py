@@ -12,7 +12,7 @@ import random
 
 app = Flask(__name__)
 
-books_titles = pd.read_csv("C:/Users/mergo/Desktop/book_conc.csv")
+books_titles = pd.read_csv("C:/Users/mergo/Desktop/50k_books.csv")
 books_years_list = pd.read_csv("C:/Users/mergo/Desktop/years_df.csv")
 interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
 interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
