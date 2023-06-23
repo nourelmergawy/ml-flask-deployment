@@ -183,7 +183,7 @@ def year_books(year):
         }
         book_recs_list.append(book_rec_dict)
     return jsonify(book_recs_list)
-@app.route('/popular_bookss', methods=['GET'])
+@app.route('/popular_books', methods=['GET'])
 def popular_books():
     book_recs_list = []
     for index, row in books_popular.iterrows():
