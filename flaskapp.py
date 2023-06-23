@@ -13,6 +13,7 @@ import random
 app = Flask(__name__)
 
 books_titles = pd.read_csv("C:/Users/mergo/Desktop/book_conc.csv")
+books_years_list = pd.read_csv("C:/Users/mergo/Desktop/years_df.csv")
 interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
 interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
 # users_books_df = pd.read_csv("C:/Users/mergo/Desktop/users_books_df.csv")
@@ -154,6 +155,16 @@ def itembased(book_title):
         book_recs_list.append(book_rec_dict)
     return jsonify(results=book_recs_list)
 
+@app.route('/year_list', methods=['GET'])
+def year_list():
+    # json_data = books_years_list.to_json(orient='values')
+    df_list = books_years_list.values.tolist()
+    # JSONP_data = jsonify(df_list)
+    return jsonify(df_list)
+@app.route('/year_books/<year>', methods=['POST'])
+def year_books(year):
+
+    return jsonify('')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
