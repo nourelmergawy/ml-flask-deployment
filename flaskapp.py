@@ -14,6 +14,7 @@ app = Flask(__name__)
 
 books_titles = pd.read_csv("C:/Users/mergo/Desktop/50k_books.csv")
 books_years_list = pd.read_csv("C:/Users/mergo/Desktop/years_df.csv")
+books_popular = pd.read_csv("C:/Users/mergo/Desktop/40_most_popular_book.csv")
 interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
 interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
 # users_books_df = pd.read_csv("C:/Users/mergo/Desktop/users_books_df.csv")
@@ -169,6 +170,23 @@ def year_books(year):
     filtered_groups = year_sort[year_sort['publication_year'] == float(year)]
     book_recs_list = []
     for index, row in filtered_groups.iterrows():
+        book_rec_dict = {
+            "book_id": row["_id"],
+            "title": row["title"],
+            "ratings": row["ratings"],
+            "url": row["url"],
+            "description": row["description"],
+            "publication_year": row["publication_year"],
+            "cover_image": row["cover_image"],
+            "country_code": row["country_code"],
+            "publisher": row["publisher"]
+        }
+        book_recs_list.append(book_rec_dict)
+    return jsonify(book_recs_list)
+@app.route('/popular_books', methods=['GET'])
+def popular_books():
+    book_recs_list = []
+    for index, row in books_popular.iterrows():
         book_rec_dict = {
             "book_id": row["_id"],
             "title": row["title"],
