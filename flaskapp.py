@@ -163,13 +163,24 @@ def year_list():
     return jsonify(df_list)
 @app.route('/year_books/<year>', methods=['POST'])
 def year_books(year):
-
-    return jsonify('')
-
+    year_sort = books_titles.sort_values(by='publication_year', ascending=False)
+    year_sort = year_sort[year_sort['publication_year'].notna()]
+    type(year_sort['publication_year'][2])
+    filtered_groups = year_sort[year_sort['publication_year'] == float(year)]
+    book_recs_list = []
+    for index, row in filtered_groups.iterrows():
+        book_rec_dict = {
+            "book_id": row["_id"],
+            "title": row["title"],
+            "ratings": row["ratings"],
+            "url": row["url"],
+            "description": row["description"],
+            "publication_year": row["publication_year"],
+            "cover_image": row["cover_image"],
+            "country_code": row["country_code"],
+            "publisher": row["publisher"]
+        }
+        book_recs_list.append(book_rec_dict)
+    return jsonify(book_recs_list)
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
-
-
-
-
-
