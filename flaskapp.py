@@ -160,8 +160,12 @@ def itembased(book_title):
 def year_list():
     # json_data = books_years_list.to_json(orient='values')
     df_list = books_years_list.values.tolist()
+    updated_list = []
+    for item in df_list:
+        item_dict = {"year": item[0]}
+        updated_list.append(item_dict)
     # JSONP_data = jsonify(df_list)
-    return jsonify(df_list)
+    return jsonify(results=updated_list)
 @app.route('/year_books/<year>', methods=['POST'])
 def year_books(year):
     year_sort = books_titles.sort_values(by='publication_year', ascending=False)
@@ -181,7 +185,7 @@ def year_books(year):
             "publisher": row["publisher"]
         }
         book_recs_list.append(book_rec_dict)
-    return jsonify(book_recs_list)
+    return jsonify(results=book_recs_list)
 @app.route('/popular_books', methods=['GET'])
 def popular_books():
     book_recs_list = []
@@ -198,6 +202,6 @@ def popular_books():
             "publisher": row["publisher"]
         }
         book_recs_list.append(book_rec_dict)
-    return jsonify(book_recs_list)
+    return jsonify(results=book_recs_list)
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
