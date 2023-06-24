@@ -166,7 +166,6 @@ def year_list():
 def year_books(year):
     year_sort = books_titles.sort_values(by='publication_year', ascending=False)
     year_sort = year_sort[year_sort['publication_year'].notna()]
-    type(year_sort['publication_year'][2])
     filtered_groups = year_sort[year_sort['publication_year'] == float(year)]
     book_recs_list = []
     for index, row in filtered_groups.iterrows():
