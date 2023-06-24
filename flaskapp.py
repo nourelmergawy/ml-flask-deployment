@@ -43,14 +43,22 @@ def recommendations(userid):
     user = collection.find_one({'_id': userid})
     # Convert the list of dictionaries to a Pandas DataFrame
     df_user = pd.DataFrame(user)
-    books_list_mongo = df_user['favorits']
+    books_mongo = df_user['favorits']
+    books_list_mongo = books_mongo['books']
+    books_mongo_df = pd.DataFrame(books_list_mongo, columns=['_id'])
+    # books_user= books_titles[['book_id','ratings','title']]
+    # print(books_mongo_df)
+    # books_list = books_user.merge(books_mongo_df, how="inner", on="book_id")
     books_list = pd.DataFrame(columns=['user_id','book_id', 'rating','title'])
     # Select the database and collection
     db = client['book']
     collection = db['books']
-    for item in books_list_mongo :
+    for _,item in books_mongo_df.iterrows() :
         book_title = collection.find_one({'_id': ObjectId(item['_id'])})
-        new_data = {'user_id':userid,'book_id': item['_id'], 'rating': item['rating'],'title':book_title['title']}
+        print(book_title)
+        print(item)
+        print(type(item))
+        new_data = {'user_id':userid,'book_id': item['_id'], 'rating': 5,'title':book_title['title']}
         books_list.loc[len(books_list)] = new_data
     books_set = set(books_list['book_id'].values.flatten())
     # Select the database and collection
