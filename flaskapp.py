@@ -127,7 +127,9 @@ def recommendations(userid):
             "mean": row["mean"],
             "adjusted_count": row["adjusted_count"],
             "score": row["score"],
-            "cover_image": row["cover_image"]
+            "cover_image": row["cover_image"],
+            "isbn13": row["isbn13"]
+
         }
         book_recs_list.append(book_rec_dict)
 
@@ -138,12 +140,12 @@ def itembased(book_title):
     users_books_df = interactions.pivot_table(index='user_id', columns='title', values='rating')
     item_based_5_books = users_books_df.corrwith(users_books_df[book_title])
     item_based_5_books = item_based_5_books.to_frame()
-    item_based_5_books = item_based_5_books[:20]
+    item_based_5_books = item_based_5_books.sample(n=20,replace=False)
     final_list = books_titles.merge(item_based_5_books, how="inner", on="title")
     book_recs_list = []
     for index, row in final_list.iterrows():
         book_rec_dict = {
-            "book_id": row["_id"],
+            "_id": row["_id"],
             "title": row["title"],
             "ratings": row["ratings"],
             "url": row["url"],
@@ -151,7 +153,8 @@ def itembased(book_title):
             "publication_year": row["publication_year"],
             "cover_image": row["cover_image"],
             "country_code": row["country_code"],
-            "publisher": row["publisher"]
+            "publisher": row["publisher"],
+            "isbn13": row["isbn13"]
         }
         book_recs_list.append(book_rec_dict)
     return jsonify(results=book_recs_list)
@@ -182,7 +185,9 @@ def year_books(year):
             "publication_year": row["publication_year"],
             "cover_image": row["cover_image"],
             "country_code": row["country_code"],
-            "publisher": row["publisher"]
+            "publisher": row["publisher"],
+            "isbn13": row["isbn13"]
+
         }
         book_recs_list.append(book_rec_dict)
     return jsonify(results=book_recs_list)
@@ -199,7 +204,9 @@ def popular_books():
             "publication_year": row["publication_year"],
             "cover_image": row["cover_image"],
             "country_code": row["country_code"],
-            "publisher": row["publisher"]
+            "publisher": row["publisher"],
+            "isbn13": row["isbn13"]
+
         }
         book_recs_list.append(book_rec_dict)
     return jsonify(results=book_recs_list)
