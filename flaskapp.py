@@ -45,20 +45,20 @@ def recommendations(userid):
     df_user = pd.DataFrame(user)
     books_mongo = df_user['favorits']
     books_list_mongo = books_mongo['books']
-    books_mongo_df = pd.DataFrame(books_list_mongo, columns=['_id'])
+    books_mongo_df = pd.DataFrame(books_list_mongo, columns=['book_item'])
     # books_user= books_titles[['book_id','ratings','title']]
     # print(books_mongo_df)
     # books_list = books_user.merge(books_mongo_df, how="inner", on="book_id")
     books_list = pd.DataFrame(columns=['user_id','book_id', 'rating','title'])
     # Select the database and collection
     db = client['book']
-    collection = db['books']
+    collection_books= db['books']
     for _,item in books_mongo_df.iterrows() :
-        book_title = collection.find_one({'_id': ObjectId(item['_id'])})
-        print(book_title)
-        print(item)
-        print(type(item))
-        new_data = {'user_id':userid,'book_id': item['_id'], 'rating': 5,'title':book_title['title']}
+        book_title = collection_books.find_one({'_id': ObjectId(item['book_item'])})
+        # print(book_title)
+        # print(book_title)
+        # print(type(item))
+        new_data = {'user_id':userid,'book_id': book_title['_id'], 'rating': 5,'title':book_title['title']}
         books_list.loc[len(books_list)] = new_data
     books_set = set(books_list['book_id'].values.flatten())
     # Select the database and collection
