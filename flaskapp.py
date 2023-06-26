@@ -18,6 +18,15 @@ books_popular = pd.read_csv("C:/Users/mergo/Desktop/40_most_popular_book.csv")
 interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
 interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
 # users_books_df = pd.read_csv("C:/Users/mergo/Desktop/users_books_df.csv")
+
+url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
+
+# Create a client object
+client = pymongo.MongoClient(url)
+
+db_users  = client['book']
+collection_users = db_users ['users']
+all_users = collection_users.find({}, {'_id': 1, 'favorits': 1})
 @app.route('/')
 def home():
     return 'Server works'
@@ -29,10 +38,6 @@ def test():
 @app.route('/recommendations/<userid>', methods=['POST'])
 def recommendations(userid):
     # Specify the database URL and credentials
-    url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
-
-    # Create a client object
-    client = pymongo.MongoClient(url)
 
     # Select the database and collection
     db = client['book']
@@ -54,21 +59,21 @@ def recommendations(userid):
     db = client['book']
     collection_books= db['books']
     for _,item in books_mongo_df.iterrows() :
+        # print(item['book_item'])
         book_title = collection_books.find_one({'_id': ObjectId(item['book_item'])})
+
         # print(book_title)
         # print(book_title)
         # print(type(item))
-        new_data = {'user_id':userid,'book_id': book_title['_id'], 'rating': 5,'title':book_title['title']}
+        new_data = {'user_id':userid,'book_id': str(book_title['_id']), 'rating': 5,'title':book_title['title']}
         books_list.loc[len(books_list)] = new_data
     books_set = set(books_list['book_id'].values.flatten())
+    print(books_set)
     # Select the database and collection
-    db = client['book']
-    collection = db['users']
-    user = collection.find({},{'_id':1,'favorits':1})
+
     # Convert the list of dictionaries to a Pandas DataFrame
-    df = pd.DataFrame(user)
-
-
+    df = pd.DataFrame(all_users)
+    print(df)
     overlap_users = {}
     for index, row in df.iterrows():
         for item in row :
