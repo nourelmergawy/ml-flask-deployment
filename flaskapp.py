@@ -8,6 +8,8 @@ import pymongo
 import pandas as pd
 from bson.objectid import ObjectId
 from flask import Flask, request, jsonify
+from datetime import datetime
+
 import random
 
 app = Flask(__name__)
@@ -18,15 +20,13 @@ books_popular = pd.read_csv("C:/Users/mergo/Desktop/40_most_popular_book.csv")
 interactions = pd.read_csv("C:/Users/mergo/Desktop/final_interaction_conc.csv")
 interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_count']]
 # users_books_df = pd.read_csv("C:/Users/mergo/Desktop/users_books_df.csv")
-
-url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
-
-# Create a client object
-client = pymongo.MongoClient(url)
-
-db_users  = client['book']
-collection_users = db_users ['users']
-all_users = collection_users.find({}, {'_id': 1, 'favorits': 1})
+#
+# url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
+# # Create a client object
+# client = pymongo.MongoClient(url)
+# db_users  = client['book']
+# collection_users = db_users ['users']
+# all_users = collection_users.find({}, {'_id': 1, 'favorits': 1})
 @app.route('/')
 def home():
     return 'Server works'
@@ -35,20 +35,44 @@ def home():
 def test(): 
     userid = request.form.get('userid')
     return
+
+# @app.route('/checkrecommendations/<userid>', methods=['POST'])
+# def recommendations(userid):
+#     # Specify the database URL and credentials
+#     url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
+#
+#     # Create a client object
+#     client = pymongo.MongoClient(url)
+#     # Select the database and collection
+#     db = client['book']
+#     collection = db['users']
+#     userid = ObjectId(userid)
+#     user = collection.find_one({'_id': userid})
+#     # Convert the list of dictionaries to a Pandas DataFrame
+#     df_user = pd.DataFrame(user)
+#     books_mongo = df_user['recommendations']
+#     if(books_mongo != None):
+#         return books_mongo
+#     else:
+#         return  recommendations(userid)
+
 @app.route('/recommendations/<userid>', methods=['POST'])
 def recommendations(userid):
     # Specify the database URL and credentials
+    url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
 
+    # Create a client object
+    client = pymongo.MongoClient(url)
     # Select the database and collection
     db = client['book']
     collection = db['users']
-    # Retrieve data from the collection 
+    # Retrieve data from the collection
     #request.form.post('userid')
     userid = ObjectId(userid)
     user = collection.find_one({'_id': userid})
     # Convert the list of dictionaries to a Pandas DataFrame
     df_user = pd.DataFrame(user)
-    books_mongo = df_user['favorits']
+    books_mongo = user['favorits']
     books_list_mongo = books_mongo['books']
     books_mongo_df = pd.DataFrame(books_list_mongo, columns=['book_item'])
     # books_user= books_titles[['book_id','ratings','title']]
@@ -68,12 +92,14 @@ def recommendations(userid):
         new_data = {'user_id':userid,'book_id': str(book_title['_id']), 'rating': 5,'title':book_title['title']}
         books_list.loc[len(books_list)] = new_data
     books_set = set(books_list['book_id'].values.flatten())
-    print(books_set)
-    # Select the database and collection
 
+    # Select the database and collection
+    db_users = client['book']
+    collection_users = db_users['users']
+    all_users = collection_users.find({}, {'_id': 1, 'favorits': 1})
     # Convert the list of dictionaries to a Pandas DataFrame
     df = pd.DataFrame(all_users)
-    print(df)
+
     overlap_users = {}
     for index, row in df.iterrows():
         for item in row :
@@ -122,7 +148,7 @@ def recommendations(userid):
     similar_users = similar_users[similar_users["user_id"]!=str(userid)]
     # books_titles = pd.read_csv("C:/Users/mergo/Desktop/books.csv")
     # Assuming 'df' is your DataFrame
-    columns_to_drop = ["Unnamed: 0","book_id"]
+    columns_to_drop = ["book_id"]
     books_titles1 = books_titles.drop(columns_to_drop, axis=1)
     # Assuming 'df' is your DataFrame
     books_titles1.rename(columns={'_id': 'book_id'}, inplace=True)
@@ -134,20 +160,32 @@ def recommendations(userid):
     book_recs_list = []
     for _, row in book_recs.iterrows():
         book_rec_dict = {
-            "book_id": row["book_id"],
+            "_id": row["book_id"],
             "title": row["title"],
             "count": row["count"],
             "mean": row["mean"],
             "adjusted_count": row["adjusted_count"],
             "score": row["score"],
             "cover_image": row["cover_image"],
-            "isbn13": row["isbn13"]
+            "isbn13": row["isbn13"],
+            "description":row["description"],
+            "ratings": row["ratings"],
+
+
 
         }
         book_recs_list.append(book_rec_dict)
+        # Get the current date and time
+        current_date = datetime.now()
+        collection.update_one(
+            {'_id': userid},
+            {'$set': {'recommendations': {
+                'updatedAt':current_date,
+                'results':book_recs_list
+            }}}
+        )
 
     return jsonify(results=book_recs_list)
-
 @app.route('/itembased/<book_title>', methods=['POST'])
 def itembased(book_title):
     users_books_df = interactions.pivot_table(index='user_id', columns='title', values='rating')
