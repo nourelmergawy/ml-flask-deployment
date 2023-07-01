@@ -72,7 +72,7 @@ def recommendations(userid):
     user = collection.find_one({'_id': userid})
     # Convert the list of dictionaries to a Pandas DataFrame
     df_user = pd.DataFrame(user)
-    books_mongo = user['favorits']
+    books_mongo = user ['favorits']
     books_list_mongo = books_mongo['books']
     books_mongo_df = pd.DataFrame(books_list_mongo, columns=['book_item'])
     # books_user= books_titles[['book_id','ratings','title']]
