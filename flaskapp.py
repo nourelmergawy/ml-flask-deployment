@@ -158,10 +158,10 @@ def recommendations(userid):
 @app.route('/itembased/<book_title>', methods=['POST'])
 def itembased(book_title):
     users_books_df = interactions.pivot_table(index='user_id', columns='title', values='rating')
-    item_based_5_books = users_books_df.corrwith(users_books_df[book_title])
-    item_based_5_books = item_based_5_books.to_frame()
-    item_based_5_books = item_based_5_books.sample(n=20,replace=False)
-    final_list = books_titles.merge(item_based_5_books, how="inner", on="title")
+    item_books = users_books_df.corrwith(users_books_df[book_title])
+    item_books = item_books.to_frame()
+    item_books = item_books.sample(n=20,replace=False)
+    final_list = books_titles.merge(item_books, how="inner", on="title")
     book_recs_list = []
     for index, row in final_list.iterrows():
         book_rec_dict = {
