@@ -30,32 +30,6 @@ interactions = interactions[['book_id', 'user_id', 'rating', 'title', 'ratings_c
 @app.route('/')
 def home():
     return 'Server works'
-
-@app.route('/test', methods=['POST'])
-def test(): 
-    userid = request.form.get('userid')
-    return
-
-# @app.route('/checkrecommendations/<userid>', methods=['POST'])
-# def recommendations(userid):
-#     # Specify the database URL and credentials
-#     url = "mongodb+srv://maryam:recobooks@cluster0.fhsy9vt.mongodb.net/?retryWrites=true&w=majority"
-#
-#     # Create a client object
-#     client = pymongo.MongoClient(url)
-#     # Select the database and collection
-#     db = client['book']
-#     collection = db['users']
-#     userid = ObjectId(userid)
-#     user = collection.find_one({'_id': userid})
-#     # Convert the list of dictionaries to a Pandas DataFrame
-#     df_user = pd.DataFrame(user)
-#     books_mongo = df_user['recommendations']
-#     if(books_mongo != None):
-#         return books_mongo
-#     else:
-#         return  recommendations(userid)
-
 @app.route('/recommendations/<userid>', methods=['POST'])
 def recommendations(userid):
     # Specify the database URL and credentials
@@ -83,17 +57,11 @@ def recommendations(userid):
     db = client['book']
     collection_books= db['books']
     for _,item in books_mongo_df.iterrows() :
-        # print(item['book_item'])
         book_title = collection_books.find_one({'_id': ObjectId(item['book_item'])})
-
-        # print(book_title)
-        # print(book_title)
-        # print(type(item))
         new_data = {'user_id':userid,'book_id': str(book_title['_id']), 'rating': 5,'title':book_title['title']}
         books_list.loc[len(books_list)] = new_data
     books_set = set(books_list['book_id'].values.flatten())
 
-    # Select the database and collection
     db_users = client['book']
     collection_users = db_users['users']
     all_users = collection_users.find({}, {'_id': 1, 'favorits': 1})
@@ -133,16 +101,13 @@ def recommendations(userid):
     interactions["user_index"] = interactions["user_id"].astype("category").cat.codes
     interactions["book_index"] = interactions["book_id"].astype("category").cat.codes
     from scipy.sparse import coo_matrix
-
     ratings_mat_coo = coo_matrix((interactions["rating"], (interactions["user_index"], interactions["book_index"])))
     ratings_mat = ratings_mat_coo.tocsr()
     interactions[interactions["user_id"] == str(userid)]
     my_index = 0
     from sklearn.metrics.pairwise import cosine_similarity
-
     similarity = cosine_similarity(ratings_mat[my_index,:], ratings_mat).flatten()
     import numpy as np
-
     indices = np.argpartition(similarity, len(similarity)-1)[-len(similarity):]
     similar_users = interactions[interactions["user_index"].isin(indices)].copy()
     similar_users = similar_users[similar_users["user_id"]!=str(userid)]
@@ -154,10 +119,17 @@ def recommendations(userid):
     books_titles1.rename(columns={'_id': 'book_id'}, inplace=True)
     book_recs = similar_users.groupby("book_id").rating.agg(['count', 'mean'])
     book_recs = book_recs.merge(books_titles1, how="inner", on="book_id")
+    print(book_recs['mean'][:2])
+    # Calculate the predicted ratings
+    predicted_ratings = book_recs["mean"].values  # Assuming "mean" column contains the predicted ratings
+    from sklearn.metrics import mean_squared_error
     book_recs["adjusted_count"] = book_recs["count"] * (book_recs["count"] / book_recs["ratings"])
     book_recs["score"] = book_recs["mean"] * book_recs["adjusted_count"]
     book_recs = book_recs[book_recs["mean"] >=4]
     book_recs_list = []
+    if len(book_recs) >= 100 :
+        book_recs = book_recs[:100]
+    else :book_recs = book_recs[:len(book_recs)]
     for _, row in book_recs.iterrows():
         book_rec_dict = {
             "_id": row["book_id"],
@@ -170,9 +142,6 @@ def recommendations(userid):
             "isbn13": row["isbn13"],
             "description":row["description"],
             "ratings": row["ratings"],
-
-
-
         }
         book_recs_list.append(book_rec_dict)
         # Get the current date and time
@@ -261,5 +230,8 @@ def popular_books():
         }
         book_recs_list.append(book_rec_dict)
     return jsonify(results=book_recs_list)
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=False)
